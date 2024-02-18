@@ -17,15 +17,15 @@ import { ProductModel, ProductSchema } from './product/product.schema';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(AuthenticationMiddleware)
-      .exclude()
-      .forRoutes('*');
+      // .apply(AuthenticationMiddleware)
+      // .exclude()
+      // .forRoutes('*');
 
-      consumer
-      .apply(AuthorizationMiddleware)
-      .forRoutes(
-       // { path: '/customer/:CustomerId', method: RequestMethod.GET },
-        );
+      // consumer
+      // .apply(AuthorizationMiddleware)
+      // .forRoutes(
+      //  // { path: '/customer/:CustomerId', method: RequestMethod.GET },
+      //   );
   }
   
 }

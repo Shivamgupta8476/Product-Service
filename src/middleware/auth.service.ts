@@ -39,7 +39,7 @@ export class AuthenticationMiddleware implements NestMiddleware {
 export class AuthorizationMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     const decodedToken = req['decodedToken'];
-    const id=req.params.CustomerId
+    const id=req.params.id
     if (!isValidObjectId(id)) {
       throw new HttpException('Not a valid user id', HttpStatus.BAD_REQUEST);
     }
