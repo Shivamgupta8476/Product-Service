@@ -4,10 +4,25 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
 import helmet from 'helmet';
 import { json } from 'body-parser';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+require('dotenv').config();
 const port = 4000;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.connectMicroservice<MicroserviceOptions>({
+		transport: Transport.RMQ,
+		options: {
+			urls: [
+				process.env.RABBIT_URI,
+			],
+			queue: 'Product_queue',
+			queueOptions: {
+				durable: false,
+			},
+		},
+	});
+	await app.startAllMicroservices();
   const config = new DocumentBuilder()
     .setTitle('Product_Service')
     .setDescription('Product Service Backend APIS')
@@ -22,10 +37,8 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document, {});
-
   // It Enables Cors For All Domain
   app.enableCors();
-
   // Helmet helps you secure your Express apps by setting various HTTP headers.
   app.use(helmet());
   app.use(json({ limit: '50mb' }));

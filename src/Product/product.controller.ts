@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   HttpException,
+  Inject,
   Logger,
   Post,
   Req,
@@ -12,14 +13,20 @@ import { ApiOkResponse, ApiTags, ApiBearerAuth, ApiConsumes } from '@nestjs/swag
 import { ProductService } from './product.service';
 import { ProductDto } from './product.dto';
 import { FileInterceptor} from '@nestjs/platform-express';
+import { ClientProxy, EventPattern } from '@nestjs/microservices';
 
 @ApiTags('Product')
 @Controller('/product')
 @ApiBearerAuth()
 export class ProductController {
+  @EventPattern('login_created')
+	async handleOrderCreated(data: Record<string, unknown>) {
+		console.log('login_created', data);
+  }
   constructor(
     private service: ProductService,
     private readonly logger: Logger,
+    @Inject('PRODUCT_SERVICE') private readonly client: ClientProxy
   ) {}
   @Post('/create')
   @ApiOkResponse({ description: 'craeteproduct ' })
@@ -36,6 +43,7 @@ export class ProductController {
       if (!file.originalname.match(/\.(jpeg|jpg)$/)) {
 				throw new HttpException("Only image files are allowed!", 500)
 			}
+      this.client.emit('order_created', createProductReq);
       return await this.service.createProduct(createProductReq,file,req);
     } catch (e) {
       this.logger.error(

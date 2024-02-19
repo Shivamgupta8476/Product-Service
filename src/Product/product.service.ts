@@ -5,19 +5,23 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { ProductDto } from './product.dto';
 import { ProductModel } from './product.schema';
 import * as AWS from 'aws-sdk';
+import { ClientProxy} from '@nestjs/microservices';
+require('dotenv').config();
+
 
 @Injectable()
 @ApiBearerAuth()
 export class ProductService {
     private readonly s3: AWS.S3;
+    private readonly client: ClientProxy;
 
     constructor(
         private readonly logger: Logger,
         @InjectModel(ProductModel.name) private readonly productServiceModel: Model<ProductModel>,
     ) {
         this.s3 = new AWS.S3({
-            accessKeyId: "AKIA5FTZBRK5ZR2HJP5W",
-            secretAccessKey: "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"
+            accessKeyId: process.env.ACCESS_KEY_ID,
+            secretAccessKey: process.env.SECRET_ACCESS_KEY
         });
     }
 
@@ -35,7 +39,6 @@ export class ProductService {
                 adminId:req['decodedToken']['id']
 
             });
-
             return {
                 message: 'Product created successfully',
                 success: true,
@@ -49,10 +52,9 @@ export class ProductService {
     private async uploadToS3(file: Express.Multer.File): Promise<string | null> {
         try {
             const params = {
-                Bucket: 'shivam-serverless-deployment',
+                Bucket: process.env.BUCKET_NAME,
                 Body: file.buffer, 
                 Key: file.originalname,
-                AWS_ACL : "public-read",
                 REGION :'ap-south-1'
             };
             const response = await this.s3.upload(params).promise();
