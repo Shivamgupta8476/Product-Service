@@ -1,14 +1,20 @@
 import {
   Body,
   Controller,
+  Delete,
+  Get,
   HttpException,
   Inject,
   Logger,
+  Param,
   Post,
+  Put,
   Req,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import { Request } from 'express';
+
 import { ApiOkResponse, ApiTags, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { ProductService } from './product.service';
 import { ProductDto } from './product.dto';
@@ -41,7 +47,7 @@ export class ProductController {
     try {
       console.log(file.originalname)
       if (!file.originalname.match(/\.(jpeg|jpg)$/)) {
-				throw new HttpException("Only image files are allowed!", 500)
+				return new HttpException("Only image files are allowed!", 500)
 			}
       this.client.emit('order_created', createProductReq);
       return await this.service.createProduct(createProductReq,file,req);
@@ -52,4 +58,68 @@ export class ProductController {
       throw new HttpException('Internal Server Error', 500);
     }
   }
+
+  @Get('getProducts/:id')
+ async getProducts(@Param('id') id: string) {
+   try{
+     let data =await this.service.getProducts(id);
+     if(data){
+      return data
+     }else{
+     throw new HttpException('Product not found', 404);
+     }
+   }
+    catch(e){
+     throw new HttpException(e.message, 500);
+    }
+  }
+
+  @Get('getAllProducts')
+  async getAllProducts() {
+    try{
+      let data =await this.service.getAllProducts();
+      if(data){
+       return data
+      }else{
+      throw new HttpException('Product not found', 404);
+      }
+    }
+     catch(e){
+      throw new HttpException(e.message, 500);
+     }
+   }
+
+
+   @Delete('deleteProducts/:id')
+   async deleteProduct(req: Request,@Param('id') id: string) {
+     try{
+       let userId = req['decodedToken']['id'];
+       let data =await this.service.deleteProduct(id,userId);
+       if(data){
+        return data
+       }else{
+       throw new HttpException('Product not found', 404);
+       }
+     }
+      catch(e){
+       throw new HttpException(e.message, 500);
+      }
+    }
+
+    @Put('updateProducts/:id')
+    async updateProduct( @Param('id') id: string, @Body() productDto: ProductDto) {
+      try{
+        let data =await this.service.updateProduct(id,productDto);
+        if(data){
+         return data
+        }
+       }
+       catch(e){
+        throw new HttpException(e.message, 500);
+       }
+
+    }
+
+
+
 }

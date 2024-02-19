@@ -1,6 +1,6 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger, Req } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import  { Model,Types } from 'mongoose';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { ProductDto } from './product.dto';
 import { ProductModel } from './product.schema';
@@ -64,4 +64,52 @@ export class ProductService {
             return null;
         }
     }
+
+    async getProducts(id: string) {
+        try{
+        return await this.productServiceModel.find({_id:id});
+        }catch(e){
+            throw new HttpException(e.message, 404);
+        }
+
+    }
+
+    async getAllProducts() {
+        try{
+        return await this.productServiceModel.find({});
+        }catch(e){
+            throw new HttpException(e.message, 404);
+        }
+    }
+
+    async deleteProduct(id: string,userId:string) { 
+        try{
+        if(userId !== id){
+            throw new HttpException('Unauthorized access', HttpStatus.FORBIDDEN);
+        }
+        return await this.productServiceModel.findByIdAndDelete(id);
+        }catch(e){
+            throw new HttpException(e.message, 404);
+        }
+    }
+    
+    async updateProduct(id: string, data: ProductDto) {
+        try { 
+            const product = await this.productServiceModel.findById(id);
+            
+            if (!product) {
+                throw new Error("Product not found");
+            } 
+            product.stockQuantity += data.stockQuantity;
+            product.updatedAt = new Date();
+     
+            await product.save();
+            return product;
+        } catch (error) {
+            console.error("Error updating product:", error);
+            throw error;
+        }
+    }
+    
+    
 }
