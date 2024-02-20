@@ -11,18 +11,16 @@ const port = 4000;
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.connectMicroservice<MicroserviceOptions>({
-		transport: Transport.RMQ,
-		options: {
-			urls: [
-				process.env.RABBIT_URI,
-			],
-			queue: 'Product_queue',
-			queueOptions: {
-				durable: false,
-			},
-		},
-	});
-	await app.startAllMicroservices();
+    transport: Transport.RMQ,
+    options: {
+      urls: [process.env.RABBIT_URI],
+      queue: 'Product_queue',
+      queueOptions: {
+        durable: false,
+      },
+    },
+  });
+  await app.startAllMicroservices();
   const config = new DocumentBuilder()
     .setTitle('Product_Service')
     .setDescription('Product Service Backend APIS')

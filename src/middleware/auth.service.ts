@@ -3,11 +3,12 @@ import { Request, Response, NextFunction } from 'express';
 import { jwtDecode } from 'jwt-decode';
 import * as jwt from 'jsonwebtoken';
 import { isValidObjectId } from 'mongoose';
+require('dotenv').config();
 
 
 @Injectable()
 export class AuthenticationMiddleware implements NestMiddleware {
-  private readonly secretKey = 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6'; 
+  private readonly secretKey = process.env.SECRET_KEY; 
 
   use(req: Request, res: Response, next: NextFunction) {
     if (req.headers.authorization) {
@@ -20,7 +21,8 @@ export class AuthenticationMiddleware implements NestMiddleware {
             if (err) {
               throw new HttpException('Invalid Token', 401);
             } else {
-              req['decodedToken'] = decodedToken;
+            
+              req['user'] = decodedToken;
               next();
             }
           });
@@ -38,13 +40,9 @@ export class AuthenticationMiddleware implements NestMiddleware {
 
 export class AuthorizationMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    const decodedToken = req['decodedToken'];
-    const id=req.params.id
-    if (!isValidObjectId(id)) {
-      throw new HttpException('Not a valid user id', HttpStatus.BAD_REQUEST);
-    }
-    if (id.toString() !== decodedToken.id.toString()) {
-      throw new HttpException('Unauthorized access', HttpStatus.FORBIDDEN);
+    const decodedToken = req['user'];
+    if(decodedToken.role !== 'admin'){
+       throw new HttpException('Unauthorized access', HttpStatus.FORBIDDEN);
     }
     next();
   }
