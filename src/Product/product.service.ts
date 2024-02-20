@@ -1,11 +1,19 @@
-import { HttpException, HttpStatus, Inject, Injectable, Logger, Req } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
+  Req,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import  { Model, isValidObjectId} from 'mongoose';
+import { Model, isValidObjectId } from 'mongoose';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { ProductDto, ProductUpdateDto } from './product.dto';
 import { ProductModel } from './product.schema';
 import * as AWS from 'aws-sdk';
 import { ClientProxy } from '@nestjs/microservices';
+import { v4 as uuidv4 } from 'uuid';
 require('dotenv').config();
 
 @Injectable()
@@ -17,7 +25,7 @@ export class ProductService {
     @InjectModel(ProductModel.name)
     private readonly productServiceModel: Model<ProductModel>,
     @Inject('CUSTOMER_SERVICE') private readonly product2Customer: ClientProxy,
-    @Inject('ORDER_SERVICE') private readonly product2Order: ClientProxy
+    @Inject('ORDER_SERVICE') private readonly product2Order: ClientProxy,
   ) {
     this.s3 = new AWS.S3({
       accessKeyId: process.env.ACCESS_KEY_ID,
@@ -36,11 +44,13 @@ export class ProductService {
         return new HttpException('Invalid file', HttpStatus.BAD_REQUEST);
       }
       const location = await this.uploadToS3(file);
+      let id = uuidv4();
       this.product2Order.emit('Product_created', {
         ...data,
         createdAt: data.createdAt || new Date(),
         updatedAt: data.updatedAt || new Date(),
         imageUrl: location,
+        productId: id,
         adminId: req['user']['id'],
       });
       const newProduct = await this.productServiceModel.create({
@@ -48,6 +58,7 @@ export class ProductService {
         createdAt: data.createdAt || new Date(),
         updatedAt: data.updatedAt || new Date(),
         imageUrl: location,
+        productId: id,
         adminId: req['user']['id'],
       });
       return {
@@ -99,14 +110,17 @@ export class ProductService {
         throw new HttpException('Not a valid user id', HttpStatus.BAD_REQUEST);
       }
       const findProduct = await this.productServiceModel
-        .findOneAndDelete({ _id: id })
+        .findOne({ _id: id })
         .exec();
 
       if (userId !== findProduct.adminId) {
         throw new HttpException('Unauthorized access', HttpStatus.FORBIDDEN);
       }
-      this.product2Order.emit('Product_deleted',id);
-      return await this.productServiceModel.findByIdAndDelete(id);
+      this.product2Order.emit('Product_deleted', findProduct.productId);
+       await this.productServiceModel.findByIdAndDelete(id);
+       return{
+        message: 'Successfully deleted product'
+       }
     } catch (e) {
       throw new HttpException(e.message, 404);
     }
@@ -114,7 +128,7 @@ export class ProductService {
 
   async updateProduct(id: string, data: ProductUpdateDto) {
     try {
-        this.logger.log('Entered into updateProductData', ProductService.name);
+      this.logger.log('Entered into updateProductData', ProductService.name);
 
       const findproduct = await this.productServiceModel.findById(id);
 
@@ -137,14 +151,14 @@ export class ProductService {
         findproduct.price = data.price;
       }
       if (data?.stockQuantity) {
-        findproduct.stockQuantity += data.stockQuantity;
+        findproduct.stockQuantity = data.stockQuantity;
       }
-      if (data?.availability && ["yes" , "no"].includes(data.availability)) {
+      if (data?.availability && ['yes', 'no'].includes(data.availability)) {
         findproduct.availability = data.availability;
       }
-     
+
       findproduct.updatedAt = new Date();
-      this.product2Order.emit('Product_updated',findproduct);
+      this.product2Order.emit('Product_updated', findproduct);
 
       await findproduct.save();
       return findproduct;
@@ -156,7 +170,46 @@ export class ProductService {
 
   async deleteProductByUserID(id: string) {
     try {
-      return await this.productServiceModel.deleteMany({adminId:id});
+      return await this.productServiceModel.deleteMany({ adminId: {$in:[id]} });
+    } catch (e) {
+      throw new HttpException(e.message, 404);
+    }
+  }
+
+  async UpdateProduct(data: any) {
+    try {
+      await this.productServiceModel
+        .findOneAndUpdate(
+          { productId: data.productId },
+          { $set: { stockQuantity: data.stockQuantity } },
+        )
+        .exec();
+    } catch (e) {
+      throw new HttpException(e.message, 404);
+    }
+  }
+
+  async deleteProducts(data: any) {
+    try {
+      await this.productServiceModel
+        .findOneAndUpdate(
+          { productId: data.productId },
+          { $inc: { stockQuantity: data.quantity } },
+        )
+        .exec();
+    } catch (e) {
+      throw new HttpException(e.message, 404);
+    }
+  }
+
+  async updateStock(data: any) {
+    try {
+      await this.productServiceModel
+        .findOneAndUpdate(
+          { productId: data.productId },
+          { $inc: { stockQuantity: data.quantity } },
+        )
+        .exec();
     } catch (e) {
       throw new HttpException(e.message, 404);
     }

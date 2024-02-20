@@ -21,7 +21,6 @@ export class AuthenticationMiddleware implements NestMiddleware {
             if (err) {
               throw new HttpException('Invalid Token', 401);
             } else {
-            
               req['user'] = decodedToken;
               next();
             }

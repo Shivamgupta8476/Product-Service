@@ -1,14 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsNotEmpty,
-  IsString,
-  IsNumber,
-  IsUrl,
-  IsArray,
-  IsOptional,
-  IsEnum,
-} from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional } from 'class-validator';
 
 @Schema()
 export class ProductModel {
@@ -26,6 +18,10 @@ export class ProductModel {
   @IsNotEmpty()
   @IsString()
   adminId: string;
+
+  @Prop({ required: true, unique: true })
+  @IsString()
+  productId: string;
 
   @Prop({ required: true })
   @IsNotEmpty()

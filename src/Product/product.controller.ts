@@ -16,7 +16,12 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 
-import { ApiOkResponse, ApiTags, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiTags,
+  ApiBearerAuth,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { ProductService } from './product.service';
 import { ProductDto, ProductUpdateDto } from './product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -31,9 +36,8 @@ export class ProductController {
     private service: ProductService,
     private readonly logger: Logger,
     @Inject('CUSTOMER_SERVICE') private readonly product2Customer: ClientProxy,
-    @Inject('ORDER_SERVICE') private readonly product2Order: ClientProxy
-
-  ) { }
+    @Inject('ORDER_SERVICE') private readonly product2Order: ClientProxy,
+  ) {}
   @UseGuards(JwtAuthGuard)
   @Post('/create')
   @ApiOkResponse({ description: 'craeteproduct ' })
@@ -47,7 +51,7 @@ export class ProductController {
     this.logger.log('Request made to create Product');
     try {
       if (!file.originalname.match(/\.(jpeg|jpg)$/)) {
-        return new HttpException("Only image files are allowed!", 500)
+        return new HttpException('Only image files are allowed!', 500);
       }
       return await this.service.createProduct(createProductReq, file, req);
     } catch (e) {
@@ -64,12 +68,11 @@ export class ProductController {
     try {
       let data = await this.service.getProducts(id);
       if (data) {
-        return data
+        return data;
       } else {
         throw new HttpException('Product not found', 404);
       }
-    }
-    catch (e) {
+    } catch (e) {
       throw new HttpException(e.message, 500);
     }
   }
@@ -80,51 +83,63 @@ export class ProductController {
     try {
       let data = await this.service.getAllProducts();
       if (data) {
-        return data
+        return data;
       } else {
         throw new HttpException('Product not found', 404);
       }
-    }
-    catch (e) {
+    } catch (e) {
       throw new HttpException(e.message, 500);
     }
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('deleteProducts/:id')
-  async deleteProduct(req: Request, @Param('id') id: string) {
+  async deleteProduct(@Req() req: Request, @Param('id') id: string) {
     try {
-      let data = await this.service.deleteProduct(id,req);
+      let data = await this.service.deleteProduct(id, req);
       if (data) {
-        return data
+        return data;
       } else {
         throw new HttpException('Product not found', 404);
       }
-    }
-    catch (e) {
+    } catch (e) {
       throw new HttpException(e.message, 500);
     }
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('updateProducts/:id')
-  async updateProduct(@Param('id') id: string, @Body() productDto: ProductUpdateDto) {
+  async updateProduct(
+    @Param('id') id: string,
+    @Body() productDto: ProductUpdateDto,
+  ) {
     try {
       let data = await this.service.updateProduct(id, productDto);
       if (data) {
-        return data
+        return data;
       }
-    }
-    catch (e) {
+    } catch (e) {
       throw new HttpException(e.message, 500);
     }
-
   }
 
   @EventPattern('delete_customer')
-  async hangledDeleteProduct(data:any) {
-    await this.service.deleteProductByUserID(data)
-  
+  async hangledDeleteProduct(data: any) {
+    await this.service.deleteProductByUserID(data);
   }
 
+  @EventPattern('update_Product_stock')
+  async UpdateProduct(data: any) {
+    await this.service.UpdateProduct(data);
+  }
+
+  @EventPattern('delete_order')
+  async deleteProducts(data: any) {
+    await this.service.deleteProducts(data);
+  }
+
+  @EventPattern('Cancel_order')
+  async updateStock(data: any) {
+    await this.service.updateStock(data);
+  }
 }

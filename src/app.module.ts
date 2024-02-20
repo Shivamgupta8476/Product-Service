@@ -56,17 +56,17 @@ require('dotenv').config();
   controllers: [ProductController],
   providers: [ProductService, Logger, JwtAuthGuard],
 })
-// export class AppModule{}
+
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(AuthenticationMiddleware).exclude().forRoutes('*');
 
     consumer
-    .apply(AuthorizationMiddleware)
-    .forRoutes(
-      { path: '/product/create', method: RequestMethod.POST },
-      { path: '/product/deleteProducts/:id', method: RequestMethod.DELETE },
-      { path: '/product/updateProducts/:id', method: RequestMethod.PUT },
-    );
-}
+      .apply(AuthorizationMiddleware)
+      .forRoutes(
+        { path: '/product/create', method: RequestMethod.POST },
+        { path: '/product/deleteProducts/:id', method: RequestMethod.DELETE },
+        { path: '/product/updateProducts/:id', method: RequestMethod.PUT },
+      );
+  }
 }

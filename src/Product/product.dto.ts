@@ -59,7 +59,6 @@ export class ProductDto {
 }
 
 export class ProductUpdateDto {
-
   @ApiProperty({ description: 'name' })
   @IsNotEmpty()
   name: string;
